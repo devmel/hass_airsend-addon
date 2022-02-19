@@ -1,0 +1,16 @@
+name: "AirSend"
+description: "AirSend Web Service"
+version: "1.0"
+slug: "airsend"
+url: https://github.com/devmel/hass_airsend-addon
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+startup: services
+ports:
+  33863/tcp: null
+ports_description:
+  33863/tcp: AirSendWebService communication
