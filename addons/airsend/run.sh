@@ -7,6 +7,7 @@ case "$arch" in \
 		amd64) arch='x86_64' ;; \
 		i386) arch='x86' ;; \
 	esac;
+echo "AirSendWebService arch ${arch}"
 
 cd /home
 ./bin/unix/${arch}/AirSendWebService 99399
