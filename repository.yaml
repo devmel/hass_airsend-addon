@@ -1,0 +1,4 @@
+# https://developers.home-assistant.io/docs/add-ons/repository#repository-configuration
+name: AirSend Home Assistant add-on repository
+url: 'https://github.com/devmel/hass_airsend-addon'
+maintainer: Devmel Apps <apps@devmel.com>
