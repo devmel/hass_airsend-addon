@@ -10,5 +10,7 @@ case "$arch" in \
 echo "AirSendWebService arch ${arch}"
 
 cd /home
+echo ${SUPERVISOR_TOKEN} > hass_api.token
 ./bin/unix/${arch}/AirSendWebService 99399
+php -S 127.0.0.1:80 callback.php
 sleep infinity

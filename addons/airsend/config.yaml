@@ -1,14 +1,16 @@
 name: "AirSend"
 description: "AirSend Web Service"
-version: "1.0"
+version: "1.1"
 slug: "airsend"
 url: https://github.com/devmel/hass_airsend-addon
+codenotary: notary@home-assistant.io
 arch:
   - aarch64
   - amd64
   - armhf
   - armv7
   - i386
+homeassistant_api: true
 startup: services
 init: false
 ports:
