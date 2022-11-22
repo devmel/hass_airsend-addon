@@ -45,7 +45,7 @@ if [ -n "$haPath" ]; then
     cd "$haPath" || error "Could not change path to $haPath"
 
     info "Downloading AirSend Home Assistant Addon"
-	wget "https://github.com/devmel/hass_airsend-addon/releases/download/1.0/hass_airsend-addon.zip"
+	wget "https://github.com/devmel/hass_airsend-addon/releases/download/latest/hass_airsend-addon.zip"
 
     if [ -d "$haPath/airsend" ]; then
         warn "airsend directory already exist, cleaning up..."
