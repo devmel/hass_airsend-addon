@@ -14,3 +14,12 @@ Home Assistant Addon to control an AirSend device in a local network.
 1. Into the terminal, run `wget -q -O - https://raw.githubusercontent.com/devmel/hass_airsend-addon/master/install | bash -`
  OR copy the `airsend` folder into your [addon folder](https://developers.home-assistant.io/docs/creating_integration_file_structure/#where-home-assistant-looks-for-integrations).
 2. In Supervisor -> Add-on store -> Local add-ons, refresh, install and start AirSend addon
+
+
+## Install on an external machine
+1. Clone repository
+2. Go to addons/airsend folder
+3. In DockerFile : replace `ARG BUILD_FROM FROM $BUILD_FROM` with your machine architecture build, example : `FROM ghcr.io/home-assistant/amd64-base:3.18` 
+4. In callback.php : replace $BASE_HASS_API and $HASS_API_TOKEN with your home automation machine values 
+5. In terminal, run `docker build -t hass_airsend-addon .`
+6. In terminal, run `docker run -dp 33863:33863 hass_airsend-addon`
