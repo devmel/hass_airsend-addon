@@ -21,58 +21,41 @@ $data = json_decode($raw, true, 512, JSON_BIGINT_AS_STRING);
 if (is_array($data) && isset($data['events'])) {
 	foreach ($data['events'] as $i => $val) {
 		if(isset($val['channel']) && isset($val['type']) && isset($val['thingnotes'])){
-			$entity_id = $api->searchEntityId($val['thingnotes']['uid']);
-			if(isset($entity_id)){
-				//Transfer event
-				if($val['type'] == 3 || $val['type'] == 2 || $val['type'] == 1){
-					$notes = $val['thingnotes']['notes'];
-					if(is_array($notes) && count($notes) > 0){
-						foreach ($notes as $i => $note) {
-							$ovalue = $note['value'];
-							if($note['type'] == 0){			//STATE
-								if(is_numeric($ovalue)){
-									$ovalue = intval($ovalue);
-									$state = null;
-									$position = 0;
-									switch($ovalue){
-										case 18:		//TOGGLE
-											$state = 'pressed';
-										break;
-										case 19:		//OFF
-											$position = 0;
-										break;
-										case 20:		//ON
-											$position = 100;
-										break;
-										case 17:		//STOP
-											$state = 'stop';
-										break;
-										case 33:		//MIDDLE
-										case 38:		//USERPOS
-											$state = 'user';
-										break;
-										case 34:		//DOWN
-											$position = 0;
-										break;
-										case 35:		//UP
-											$position = 100;
-										break;
-									}
-									if($state){
-										$api->setState($entity_id, $state);
-									}else{
-										$api->setPosition($entity_id, $position);
-									}
-								}
-							}else if($note['type'] == 1){	//DATA
-								$api->setState($entity_id, 'pressed');
-							}else if($note['type'] == 9){	//LEVEL
-								$api->setPosition($entity_id, intval($ovalue));
+			//Transfer event
+			if(isset($val['thingnotes']['uid'])){
+				$entity_id = $api->searchEntityId($val['thingnotes']['uid']);
+				if(isset($entity_id)){
+					if($val['type'] == 3 || $val['type'] == 2 || $val['type'] == 1){
+						$states = $api->convertNotesToStates($val['thingnotes']['notes']);
+						foreach ($states as $j => $state) {
+							$api->setState($entity_id, $state[0], $state[1], $val['timestamp']);
+						}
+					}else{
+						$api->setState($entity_id, 'error', 'error_'.$val['type'], $val['timestamp']);
+					}
+				}
+			//Interrupt event
+			}else{
+				if($val['type'] == 3){			//Event type GOT (sensor)
+					$isreliable = false;
+					if($val['reliability'] > 0x6 && $val['reliability'] < 0x47){
+						$isreliable = true;
+					}
+					if($isreliable == true){
+						$states = $api->convertNotesToStates($val['thingnotes']['notes']);
+						foreach ($states as $j => $state) {
+							//Search entity and update
+							$entities = $api->searchEntitiesFromChannelAndType($val['channel'], $state[0]);
+							foreach ($entities as $k => $entity_id) {
+								$api->setState($entity_id, $state[0], $state[1], $val['timestamp']);
+							}
+							//Creates if not exists
+							if(count($entities) == 0){
+								trigger_error("new channel found : ".json_encode($val['channel'])." ".$state[0]." ".$state[1], E_USER_NOTICE);
+								$api->setState(null, $state[0], $state[1], $val['timestamp'], $val['channel']);
 							}
 						}
 					}
-				}else{
-					$api->setState($entity_id, 'error_'.$val['type']);
 				}
 			}
 		}

@@ -16,6 +16,7 @@ echo "internal_url: http://${hname}:33863/"
 if [ -n "${SUPERVISOR_TOKEN:-}" ]
 then
 	echo ${SUPERVISOR_TOKEN} > hass_api.token
+	echo $(bashio::config 'auto_include') > auto_include.cfg
 else
 	echo "Not running on Home Assistant machine..."
 fi

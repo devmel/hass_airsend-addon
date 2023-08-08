@@ -1,6 +1,6 @@
 name: "AirSend"
-description: "AirSend Web Service"
-version: "1.1"
+description: "AirSend Web Service (local connection, no internet, no cloud)"
+version: "1.2"
 slug: "airsend"
 url: https://github.com/devmel/hass_airsend-addon
 codenotary: notary@home-assistant.io
@@ -17,3 +17,7 @@ ports:
   33863/tcp: null
 ports_description:
   33863/tcp: AirSendWebService communication
+options:
+  auto_include: true
+schema:
+  auto_include: bool
