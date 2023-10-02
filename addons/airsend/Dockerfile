@@ -4,9 +4,11 @@ FROM $BUILD_FROM
 # Copy data for add-on
 COPY hassapi.class.php /home
 COPY callback.php /home
-COPY poststate.sh /home
+COPY state_post.sh /home
+COPY states_get.sh /home
 COPY run.sh /
-RUN chmod a+x /home/poststate.sh
+RUN chmod a+x /home/state_post.sh
+RUN chmod a+x /home/states_get.sh
 RUN chmod a+x /run.sh
 
 # Install AirSendWebService

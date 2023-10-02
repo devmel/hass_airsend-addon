@@ -6,12 +6,8 @@ class HassAPI{
     function __construct($BASE_HASS_API, $HASS_API_TOKEN) {
 		$this->BASE_HASS_API = $BASE_HASS_API;
 		$this->HASS_API_TOKEN = $HASS_API_TOKEN;
-		$this->auto_include = false;
-        if($this->isAuthorized()){
-			$fbvalue = @file_get_contents('auto_include.cfg');
-			$this->auto_include = filter_var($fbvalue, FILTER_VALIDATE_BOOLEAN);
-			$this->loadStates();
-        }
+		$fbvalue = @file_get_contents('auto_include.cfg');
+		$this->auto_include = filter_var($fbvalue, FILTER_VALIDATE_BOOLEAN);
     }
 
 	public function isAuthorized() {
@@ -24,7 +20,7 @@ class HassAPI{
         return $this->auto_include;
 	}
 	function searchEntityId($uid) {
-		if($this->states){
+		if($this->loadStates()){
 			foreach ($this->states as $value) {
 				if($value['entity_uid_sha256'] == $uid){
 					return $value['entity_id'];
@@ -36,7 +32,7 @@ class HassAPI{
 
 	function searchEntitiesFromChannelAndType($channel, $type) {
 		$ret = array();
-		if(isset($channel) && $this->states){
+		if(isset($channel) && $this->loadStates()){
 			foreach ($this->states as $value) {
 				if(array_key_exists('attributes', $value) && array_key_exists('channel', $value['attributes'])){
 					if(self::isChannelCompatible($channel, $value['attributes']['channel'])){
@@ -66,8 +62,10 @@ class HassAPI{
 	}
 
 	function setState($entity_id, $type, $state, $timestamp_ms, $channel = null) {
+		$reloadcache = false;
 		$attributes = null;
 		if($entity_id == null && isset($channel)){
+			$reloadcache = true;
 			//New entity
 			$entity_id = "sensor.".self::toUniqueChannelName($channel);
 			$attributes = array('channel' => $channel);
@@ -104,11 +102,13 @@ class HassAPI{
 				if(array_key_exists('state', $content) && $content['state'] == $state){
 					$state .= '+';
 				}
+				$reloadcache = true;
 			}
 			if($type === 'toggle'){
 				if(array_key_exists('state', $content) && $content['state'] == 'pressed'){
 					$state .= '+';
 				}
+				$reloadcache = true;
 			}
 			if($type === 'level'){
 				$is_cover = (stripos($entity_id, "cover.") !== false) ? true : false;
@@ -131,14 +131,14 @@ class HassAPI{
 			unset($content['last_updated']);
 			//$dti = DateTimeImmutable::createFromFormat('U.u', ($timestamp_ms/1000));
 			//$content['last_updated'] = $dti->format('Y-m-d').'T'.$dti->format('H:i:s').'+00:00';
-			$this->postState($entity_id, $content);
+			$this->state_post($entity_id, $content, $reloadcache);
 			return true;
 		}
 		return false;
 	}
 
 	function getState($entity_id){
-		if($this->states && isset($entity_id)){
+		if($this->loadStates() && isset($entity_id)){
 			foreach ($this->states as $value) {
 				if($value['entity_id'] == $entity_id){
 					return $value;
@@ -253,31 +253,62 @@ class HassAPI{
         return $result;
     }
 
-	private function postState($entity_id, $content){
+	private function state_post($entity_id, $content, $reloadcache = false){
 		$json = json_encode($content, JSON_FORCE_OBJECT);
 		if(strpos($this->BASE_HASS_API, "supervisor") !== false){
 			//Bug in supervisor proxy => use bash
-			exec('./poststate.sh "'.$entity_id.'" "'.base64_encode($json).'"', $output, $retval);
+			exec('./state_post.sh "'.$entity_id.'" "'.base64_encode($json).'"', $output, $retval);
 		}else{
 			$res = HassAPI::request($this->BASE_HASS_API."/states/".$entity_id, $json, 'POST', $this->HASS_API_TOKEN);
 		}
-		trigger_error("postState ".$entity_id." ".$content['state'], E_USER_NOTICE);
+		trigger_error("state_post ".$reloadcache." : ".$entity_id." ".$content['state'], E_USER_NOTICE);
+		if($reloadcache){
+			$this->states_get_cache();
+		}
 	}
-
-	private function loadStates() {
-		$res = HassAPI::request($this->BASE_HASS_API."/states", null, 'GET', $this->HASS_API_TOKEN);
-        if($res !== false && isset($res) && is_array($res) && isset($res['data'])){
-			$this->states = json_decode($res['data'], true);
-			if($this->states){
-				foreach ($this->states as &$value) {
-					$h = str_split(hash('sha256', $value['entity_id']),12)[0];
-					$val = intval($h, 16);
-					$value['entity_uid_sha256'] = $val;
-				}
+	private function states_get_cache(){
+		if(strpos($this->BASE_HASS_API, "supervisor") !== false){
+			//Bug in supervisor proxy => use bash
+			exec('./states_get.sh', $output, $retval);
+		}else{
+			$res = HassAPI::request($this->BASE_HASS_API."/states", null, 'GET', $this->HASS_API_TOKEN);
+			if($res !== false && isset($res) && is_array($res) && isset($res['data'])){
+				file_put_contents("states.json", $res['data']);
 			}
 		}
 	}
-	
+
+	private function loadStates() {
+		$ret = false;
+		if($this->states){
+			$ret = true;
+		}else{
+			if($this->isAuthorized()){
+				$loaded = false;
+				$data_age = @(time() - filemtime('states.json'));
+				if($data_age > 100){
+					$this->states_get_cache();
+				}
+				$data = @file_get_contents('states.json');
+				if(isset($data)){
+					$this->states = json_decode($data, true);
+					if($this->states){
+						foreach ($this->states as &$value) {
+							$h = str_split(hash('sha256', $value['entity_id']),12)[0];
+							$val = intval($h, 16);
+							$value['entity_uid_sha256'] = $val;
+						}
+						$loaded = true;
+						$ret = true;
+					}
+				}
+				if($loaded == false){
+					trigger_error("API GET states wrong response", E_USER_ERROR);
+				}
+			}
+		}
+		return $ret;
+	}
 
     private static function request($url, $data = null, $method = 'GET', $token = null) {
 		$result = false;
@@ -301,8 +332,9 @@ class HassAPI{
 				}
 				curl_setopt($curl, CURLOPT_CUSTOMREQUEST, strtoupper($method));
 				if (isset($token)){
-					$token = str_replace('"', "", $token);
-					$options = array(CURLOPT_HTTPHEADER => array('Content-Type: application/json' , "Authorization: Bearer ".$token));
+					curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BEARER);
+					curl_setopt($curl,CURLOPT_XOAUTH2_BEARER, $token);
+					$options = array(CURLOPT_HTTPHEADER => array('Content-Type: application/json'));
 					curl_setopt_array($curl, $options);
 				}
 				$result = array();
