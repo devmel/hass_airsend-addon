@@ -332,10 +332,8 @@ class HassAPI{
 				}
 				curl_setopt($curl, CURLOPT_CUSTOMREQUEST, strtoupper($method));
 				if (isset($token)){
-					curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BEARER);
-					curl_setopt($curl,CURLOPT_XOAUTH2_BEARER, $token);
-					$options = array(CURLOPT_HTTPHEADER => array('Content-Type: application/json'));
-					curl_setopt_array($curl, $options);
+					$options = array('Content-Type: application/json', 'Authorization: Bearer ' . $token);
+					curl_setopt($curl, CURLOPT_HTTPHEADER, $options);
 				}
 				$result = array();
 				$result['data'] = curl_exec($curl);
