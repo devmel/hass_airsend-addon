@@ -1,0 +1,4 @@
+#!/command/execlineb -P
+fdmove -c 2 1
+with-contenv
+bash -c "exec /home/bin/unix/$(uname -m)/AirSendWebService 99399"

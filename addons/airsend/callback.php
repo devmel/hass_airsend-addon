@@ -1,12 +1,9 @@
 <?php
 require_once dirname(__FILE__) . "/hassapi.class.php";
 
-$BASE_HASS_API = "http://supervisor/core/api";
+$HASS_API_PATH = getenv("HASS_HOSTNAME") == 'supervisor' ? '/core' : '';
+$BASE_HASS_API = "http://" . getenv("HASS_HOSTNAME") . ":" . getenv("HASS_PORT") . $HASS_API_PATH . "/api";
 $HASS_API_TOKEN = @file_get_contents('hass_api.token');
-
-//On an external machine, replace with your ha values
-//$BASE_HASS_API = "http://homeassistant.local:8123/api";
-//$HASS_API_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI3YTJjYjE2M2VjZjQ0MGM0OGUwYzdkOTc2MjM4YWY5MCIsImlhdCI6MTY2ODg5NzA4OCwiZXhwIjoxOTg0MjU3MDg4fQ.gyDg_jYbD561OdQ0IngAMga-4LE3DTsd6bEIGkITGTc';
 
 $api = new HassAPI($BASE_HASS_API, $HASS_API_TOKEN);
 
