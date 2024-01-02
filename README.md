@@ -18,7 +18,7 @@ Home Assistant Addon to control an AirSend device in a local network.
 
 ## Install on an external machine
 1. Clone repository
-2. Generate your API key: [link to your profile]((https://my.home-assistant.io/redirect/profile/)) (last part of the page)
+2. Generate your API key: [link to your profile](https://my.home-assistant.io/redirect/profile/) (last part of the page)
 3. Go to addons/airsend folder
 4. Depending on your machine architecture, run in a terminal. Example with amd64: `docker build --build-arg "BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.19" -t hass_airsend-addon .`
 5. Depending on your home assistant server and your token, run in a terminal. Example with homeassistant.local:8123:  
