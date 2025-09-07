@@ -1,6 +1,9 @@
 ARG BUILD_FROM
 FROM $BUILD_FROM
 
+ENV BASE_HASS_API "http://supervisor/core/api"
+ENV HASS_API_TOKEN "undefined"
+
 # Copy data for add-on
 COPY hassapi.class.php /home
 COPY callback.php /home

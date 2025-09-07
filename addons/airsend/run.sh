@@ -1,5 +1,4 @@
 #!/usr/bin/with-contenv bashio
-
 cd /home
 arch="$(apk --print-arch)"
 case "$arch" in \
@@ -20,6 +19,11 @@ then
 else
 	echo "Not running on Home Assistant machine..."
 fi
+
+sed -i 	-e "s|\(\$BASE_HASS_API\s*=\s*\).*;|\1\"${BASE_HASS_API}\";|g" \
+		-e "s|\(\$HASS_API_TOKEN\s*=\s*\).*;|\1\"${HASS_API_TOKEN}\";|g" \
+		callback.php
+
 
 ulimit -n 4096
 ./bin/unix/${arch}/AirSendWebService 99399
