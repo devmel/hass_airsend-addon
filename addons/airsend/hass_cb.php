@@ -1,14 +1,25 @@
 <?php
 require_once dirname(__FILE__) . "/hassapi.class.php";
 
-$BASE_HASS_API = "http://supervisor/core/api";
-$HASS_API_TOKEN = @file_get_contents('hass_api.token');
+$SUPERVISOR_TOKEN = @getenv("SUPERVISOR_TOKEN");
+$HASS_HOST= @getenv("HASS_HOST");
+$HASS_TOKEN= @getenv("HASS_TOKEN");
 
-//On an external machine, replace with your ha values
-//$BASE_HASS_API = "http://homeassistant.local:8123/api";
-//$HASS_API_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI3YTJjYjE2M2VjZjQ0MGM0OGUwYzdkOTc2MjM4YWY5MCIsImlhdCI6MTY2ODg5NzA4OCwiZXhwIjoxOTg0MjU3MDg4fQ.gyDg_jYbD561OdQ0IngAMga-4LE3DTsd6bEIGkITGTc';
+$auto_include = false;
+if(!empty($HASS_HOST) && !empty($HASS_TOKEN)){
+	$machine = HassAPI::extractHostAndPort($HASS_HOST);
+	$HASS_API_URL = "http://".$machine['hostname'].":".$machine['port']."/api";
+	$HASS_API_TOKEN = $HASS_TOKEN;
+	$HASS_AUTOINCLUDE = @getenv("HASS_AUTOINCLUDE");
+	$auto_include = filter_var($HASS_AUTOINCLUDE, FILTER_VALIDATE_BOOLEAN);
+}else if(!empty($SUPERVISOR_TOKEN)){
+	$HASS_API_URL = "http://supervisor/core/api";
+	$HASS_API_TOKEN = $SUPERVISOR_TOKEN;
+	$fbvalue = @file_get_contents('auto_include.cfg');
+	$auto_include = filter_var($fbvalue, FILTER_VALIDATE_BOOLEAN);
+}
 
-$api = new HassAPI($BASE_HASS_API, $HASS_API_TOKEN);
+$api = new HassAPI($HASS_API_URL, $HASS_API_TOKEN, $auto_include);
 
 if(!$api->isAuthorized()){
 	header("HTTP/1.1 401 Unauthorized");
@@ -28,10 +39,10 @@ if (is_array($data) && isset($data['events'])) {
 					if($val['type'] == 3 || $val['type'] == 2 || $val['type'] == 1){
 						$states = $api->convertNotesToStates($val['thingnotes']['notes']);
 						foreach ($states as $j => $state) {
-							$api->setState($entity_id, $state[0], $state[1], $val['timestamp']);
+							$api->setState($entity_id, $state[0], $state[1], $val['timestamp'], $val['channel']);
 						}
 					}else{
-						$api->setState($entity_id, 'error', 'error_'.$val['type'], $val['timestamp']);
+						$api->setState($entity_id, 'error', 'error_'.$val['type'], $val['timestamp'], $val['channel']);
 					}
 				}
 			//Interrupt event
@@ -47,7 +58,7 @@ if (is_array($data) && isset($data['events'])) {
 							//Search entity and update
 							$entities = $api->searchEntitiesFromChannelAndType($val['channel'], $state[0]);
 							foreach ($entities as $k => $entity_id) {
-								$api->setState($entity_id, $state[0], $state[1], $val['timestamp']);
+								$api->setState($entity_id, $state[0], $state[1], $val['timestamp'], $val['channel']);
 							}
 							//Creates if not exists
 							if(count($entities) == 0){

@@ -1,9 +1,13 @@
 ARG BUILD_FROM
 FROM $BUILD_FROM
 
+ENV HASS_HOST=
+ENV HASS_TOKEN=
+ENV HASS_AUTOINCLUDE=0
+
 # Copy data for add-on
 COPY hassapi.class.php /home
-COPY callback.php /home
+COPY hass_cb.php /home
 COPY state_post.sh /home
 COPY states_get.sh /home
 COPY run.sh /

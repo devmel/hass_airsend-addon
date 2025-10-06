@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3
+
+- Standalone version
+
 ## 1.2
 
 - RF listening and states managements on callback

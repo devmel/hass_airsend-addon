@@ -3,11 +3,10 @@
 class HassAPI{
 	var $states = null;
 	
-    function __construct($BASE_HASS_API, $HASS_API_TOKEN) {
+    function __construct($BASE_HASS_API, $HASS_API_TOKEN, $auto_include = false) {
 		$this->BASE_HASS_API = $BASE_HASS_API;
 		$this->HASS_API_TOKEN = $HASS_API_TOKEN;
-		$fbvalue = @file_get_contents('auto_include.cfg');
-		$this->auto_include = filter_var($fbvalue, FILTER_VALIDATE_BOOLEAN);
+		$this->auto_include = $auto_include;
     }
 
 	public function isAuthorized() {
@@ -64,6 +63,11 @@ class HassAPI{
 	function setState($entity_id, $type, $state, $timestamp_ms, $channel = null) {
 		$reloadcache = false;
 		$attributes = null;
+		if(isset($channel) && ((int)$channel["id"]) == 1){
+			if($type === 'data'){
+				return;	//accept AirSend state only
+			}
+		}
 		if($entity_id == null && isset($channel)){
 			$reloadcache = true;
 			//New entity
@@ -146,6 +150,24 @@ class HassAPI{
 			}
 		}
 		return null;
+	}
+
+	public static function extractHostAndPort($input, $default_port = 8123){
+		$hostWithPort = preg_replace('#^https?://#', '', $input);
+		$hostWithPort = explode('/', $hostWithPort)[0];
+		if (strpos($hostWithPort, ':') !== false) {
+			list($hostname, $port) = explode(':', $hostWithPort, 2);
+			$port = (int)$port;
+		} else {
+			$hostname = $hostWithPort;
+		}
+		if(empty($port) || ($port <= 0 && $port >= 0x1000)){
+			$port = $default_port;
+		}
+		return [
+			'hostname' => $hostname,
+			'port'     => $port
+		];
 	}
 
 	public static function convertNotesToStates($notes){
@@ -332,10 +354,8 @@ class HassAPI{
 				}
 				curl_setopt($curl, CURLOPT_CUSTOMREQUEST, strtoupper($method));
 				if (isset($token)){
-					curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BEARER);
-					curl_setopt($curl,CURLOPT_XOAUTH2_BEARER, $token);
-					$options = array(CURLOPT_HTTPHEADER => array('Content-Type: application/json'));
-					curl_setopt_array($curl, $options);
+					$options = array('Content-Type: application/json', 'Authorization: Bearer ' . $token);
+					curl_setopt($curl, CURLOPT_HTTPHEADER, $options);
 				}
 				$result = array();
 				$result['data'] = curl_exec($curl);
