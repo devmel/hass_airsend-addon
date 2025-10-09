@@ -11,21 +11,60 @@ Home Assistant Addon to control an AirSend device in a local network.
 
 ## Manual Installation
 
-1. Into the terminal, run `wget -q -O - https://raw.githubusercontent.com/devmel/hass_airsend-addon/master/install | bash -`
- OR copy the `airsend` folder into your [addon folder](https://developers.home-assistant.io/docs/creating_integration_file_structure/#where-home-assistant-looks-for-integrations).
-2. In Supervisor -> Add-on store -> Local add-ons, refresh, install and start AirSend addon
+#### 1. Install the Add-on
+Run the following command in your terminal:
+```bash
+wget -q -O - https://raw.githubusercontent.com/devmel/hass_airsend-addon/master/install   bash -
+```
+**OR**
+Manually copy the `airsend` folder into your [Home Assistant addons directory](https://developers.home-assistant.io/docs/creating_integration_file_structure/#where-home-assistant-looks-for-integrations).
+
+#### 2. Start the Add-on
+1. Go to **Supervisor** → **Add-on Store** → **Local add-ons**.
+2. Refresh the list, then install and start the **AirSend** add-on.
 
 
 ## Install on an external machine
-1. Clone repository
-2. Generate your API key: [link to your profile](https://my.home-assistant.io/redirect/profile/) (security tab, long-lived access tokens)
-3. Go to addons/airsend folder
-4. Depending on your machine architecture, run in a terminal. Example with amd64: `docker build --build-arg "BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.22" -t hass_airsend-addon .`
-5. Depending on your home assistant server and your token, run in a terminal. Example with homeassistant.local:8123:  
+#### 1. Clone the Repository
+```bash
+git clone https://github.com/devmel/hass_airsend-addon
+cd hass_airsend-addon/addons/airsend
+```
+
+#### 2. Generate a Home Assistant API Key
+1. Go to your [Home Assistant profile](https://my.home-assistant.io/redirect/profile/).
+2. Navigate to the **Security** tab.
+3. Generate a **long-lived access token** (use this as `HASS_TOKEN`).
+
+---
+
+#### 3. Build the Docker Image
+Replace `amd64` with your machine's architecture if needed (`armhf`, `armv7`, `aarch64`, etc.):
+```bash
+docker build --build-arg "BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.22" -t hass_airsend-addon .
+```
+
+---
+
+#### 4. Run the Docker Container
+Adjust the environment variables according to your setup:
 ```bash
 docker run -dp 33863:33863 \
--e HASS_HOST='homeassistant.local:8123' \
--e HASS_TOKEN='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJiZDg1MWJlNjE1NmM0Zjc4YTRiNzhjZjRlMDc4MWZiMCIsImlhdCI6MTY5MTIyOTg5MCwiZXhwIjoyMDA2NTg5ODkwfQ._ECys-uPkM8fn1W2wvjzIJ9HLJcI7RHmZmix_2C9QgU' \
--e HASS_AUTOINCLUDE=0 \
-hass_airsend-addon
+  -e HTTPS=1 \
+  -e HASS_HOST='homeassistant.local:8123' \
+  -e HASS_TOKEN='your_token_here' \
+  -e HASS_AUTOINCLUDE=0 \
+  hass_airsend-addon
 ```
+
+##### Environment Variables:
+- HTTPS=1: Enables HTTPS. Use HTTPS=0 if you cannot handle self-signed certificates.
+- HASS_HOST: Your Home Assistant server address and port (e.g., homeassistant.local:8123).
+- HASS_TOKEN: The long-lived access token you generated.
+- HASS_AUTOINCLUDE: Set to 0 to disable auto-inclusion of the add-on in Home Assistant.
+
+---
+
+### Important Notes
+- **Security**: Never share your `HASS_TOKEN`.
+- **HTTPS**: If `HTTPS=0`, ensure your network is secure.
